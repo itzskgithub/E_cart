@@ -35,16 +35,15 @@ const OrderScreen = ({ match, history }) => {
   const userLogin = useSelector((state) => state.userLogin)
   const { userInfo } = userLogin
 
-  if (!loading) {
-    //   Calculate prices
-    const addDecimals = (num) => {
-      return (Math.round(num * 100) / 100).toFixed(2)
-    }
-
-    order.itemsPrice = addDecimals(
-      order.orderItems.reduce((acc, item) => acc + item.price * item.qty, 0)
-    )
+  const addDecimals = (num) => {
+    return (Math.round(num * 100) / 100).toFixed(2)
   }
+
+  const itemsPrice = !loading && order
+    ? addDecimals(
+        order.orderItems?.reduce((acc, item) => acc + item.price * item.qty, 0) || 0
+      )
+    : '0.00'
 
   useEffect(() => {
     if (!userInfo) {
@@ -74,7 +73,7 @@ const OrderScreen = ({ match, history }) => {
         setSdkReady(true)
       }
     }
-  }, [dispatch, orderId, successPay, successDeliver, order])
+  }, [dispatch, history, orderId, order, successDeliver, successPay, userInfo])
 
   const successPaymentHandler = (paymentResult) => {
     console.log(paymentResult)
@@ -174,7 +173,7 @@ const OrderScreen = ({ match, history }) => {
               <ListGroup.Item>
                 <Row>
                   <Col>Items</Col>
-                  <Col>${order.itemsPrice}</Col>
+                  <Col>${itemsPrice}</Col>
                 </Row>
               </ListGroup.Item>
               <ListGroup.Item>

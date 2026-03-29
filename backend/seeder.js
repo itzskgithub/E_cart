@@ -10,21 +10,46 @@ import connectDB from './config/db.js'
 
 dotenv.config()
 
-connectDB()
-
 const importData = async () => {
   try {
+    await connectDB()
+
     await Order.deleteMany()
     await Product.deleteMany()
     await User.deleteMany()
 
     const createdUsers = await User.insertMany(users)
-
     const adminUser = createdUsers[0]._id
 
-    const sampleProducts = products.map((product) => {
-      return { ...product, user: adminUser }
-    })
+    let productsFromApi = []
+
+    try {
+      const response = await fetch('https://fakestoreapi.com/products')
+      if (!response.ok) {
+        throw new Error(`Fake Store API returned ${response.status}`)
+      }
+      productsFromApi = await response.json()
+      if (!Array.isArray(productsFromApi)) {
+        throw new Error('Fake Store API returned an unexpected response format')
+      }
+    } catch (error) {
+      console.error(`Failed to fetch Fake Store API products: ${error}`.red)
+      productsFromApi = products
+    }
+
+    const sampleProducts = productsFromApi.map((product) => ({
+      user: adminUser,
+      name: product.title || product.name || 'Untitled Product',
+      image: product.image || '/images/sample.jpg',
+      brand: product.category || 'Sample brand',
+      category: product.category || 'Miscellaneous',
+      description: product.description || 'No description available',
+      price: Number(product.price || 0),
+      countInStock: 10,
+      numReviews: Number(product.rating?.count || 0),
+      rating: Number(product.rating?.rate || 0),
+      likes: 1,
+    }))
 
     await Product.insertMany(sampleProducts)
 
@@ -38,6 +63,8 @@ const importData = async () => {
 
 const destroyData = async () => {
   try {
+    await connectDB()
+
     await Order.deleteMany()
     await Product.deleteMany()
     await User.deleteMany()
